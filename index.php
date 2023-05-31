@@ -75,30 +75,14 @@ new class (0, false, true, true, true, false, __DIR__) {
   private function catmice_file_collector (string $dir) {
     /// Main operation method
 
-    $content_type = 'Content-Type';
     $dirlevel1 = Api-> dspa (dirname ($dir), $this-> basedir);
+    [$id, $extension, $content_type] = match (Observer-> doctype) {
+      default => [ null, null, null ]
+      , 'style' => [ 'cat', 'css', 'text/css' ]
+      , 'script' => [ 'mice', 'js', 'text/javascript' ]
+    }; $content_type = 'Content-Type: '
+      . $content_type . ';charset=utf-8';
 
-    switch (Observer-> doctype)
-    {
-      //~ case 'json': ... ??  most probably - never. break;
-      case 'style':
-
-        $id = 'cat';
-        $extension = 'css';
-        $content_type .= ": text/css;";
-
-      break;
-      case 'script':
-
-        $id = 'mice';
-        $extension = 'js';
-        $content_type .= ': text/javascript;';
-
-      break;
-      default: break;
-    }
-
-    $content_type .= 'charset=utf-8';
     $dirlevel2 = Api-> dspa ($dirlevel1,
     self::DIRECTORY_MASK[Observer-> doctype]);
 
@@ -121,8 +105,8 @@ new class (0, false, true, true, true, false, __DIR__) {
       $first = mb_substr ($suspect, 0, 1);
       [ $job, $multi, $target ] = match ($first) {
         default =>  [ 'literal', 'no', $dirlevel2 . DSP ]
-        , "\044" => [ 'chain', 'yes',  $dirlevel2 . DSP . 'chain.' ]
-        , "\045" => [ 'pot', ((mb_strpos ($suspect, '.') !== false) ? 'no':'yes'), $dirlevel2 . DSP . 'pot.' ]
+        , "\044" => [ 'concat', 'yes',  $dirlevel2 . DSP . 'chain.' ]
+        , "\045" => [ 'well', ((mb_strpos ($suspect, '.') !== false) ? 'no':'yes'), $dirlevel2 . DSP . 'pot.' ]
         , "\056" => [ 'root', 'no', $dirlevel1 . DSP ]
         , "\140" => [ 'trademark', 'no', $dirlevel2 . DSP . self::TRADEMARK . DSP ]
       };
@@ -141,6 +125,7 @@ new class (0, false, true, true, true, false, __DIR__) {
             natsort ($slice);
 
           foreach ($slice as $count => $file)
+            if (str_ends_with ($file, ".{$extension}"))
             $collect[$count] = file_get_contents ($directory. DSP .$file);
 
           unset ($file, $count, $slice);
@@ -149,7 +134,7 @@ new class (0, false, true, true, true, false, __DIR__) {
       else
       if ($multi === 'no') {
 
-        if ($job === 'pot') {
+        if ($job === 'well') {
           $suspect = explode ('.', $suspect);
           $chop = array_shift ($suspect);
           $target .= $chop;
@@ -174,7 +159,9 @@ new class (0, false, true, true, true, false, __DIR__) {
       unset (
         $suspect
         , $n
+        , $job
         , $multi
+        , $target
         , $first
       );
 
@@ -232,9 +219,9 @@ new class (0, false, true, true, true, false, __DIR__) {
         $BoolTest = substr (str_replace
           ('.php', '', $suspect), 1);
 
-        $suspect = ((str_replace // The following is for "Hngts RGB and media handlers"
-          ([ 'rgb?',     // Rgb is for (strict) images and/or pictures  ..
-            'media?',   // Media is all others - except those in cat, mice or xtx ..
+        $suspect = ((str_replace //~ The following is for "Hngts RGB and media handlers"
+          ([ 'rgb?',     //~ Rgb is for (strict) images and/or pictures  ..
+            'media?',   //~ Media is all others - except those in cat, mice or xtx ..
           ], "", $BoolTest) !== $BoolTest) ? true
           : @realpath ("{$_SERVER['DOCUMENT_ROOT']}$suspect")
         );
