@@ -72,6 +72,61 @@ new class (0, false, true, true, true, false, __DIR__) {
   private ?bool $expandExternals = null;      /// Constructor Param 6
   private ?string $basedir = null;            /// Constructor Param 7
 
+  public function __construct (...$p) {
+    /// Check
+    (count ($p) !== 7) and die (
+      'Catmice' . __FUNCTION__
+      . 'or error: args required 7; less found.'
+      . PHP_EOL . 'Don\'t mess too much with parameters.'
+    );
+
+    // set ..
+    foreach ([
+      'sig' => $p[4],
+      'squeeze' => $p[1],
+      'comments' => $p[2],
+      'blockCmt' => $p[3],
+      'expandExternals' => $p[5],
+    ] as $oP => $BoolVal) {
+      $this-> $oP = ((bool)$BoolVal);
+      unset ($oP, $BoolVal);
+    } $this-> hours = ((int)$p[0]);
+    // .. and go.
+    $this-> hook____ ($p[6], $Public);
+    !in_array (Observer-> doctype, array_keys (self::DIRECTORY_MASK))
+    and die ('Not a proper request.') // <- sEcuritate.
+    or // .. and main Request and Response - done !
+      $this-> catmice_file_collector ($Public);
+  }
+
+  private function hook____ (string $F_bdir, &$Public) {
+    ///
+    // According to the $Public value and passed on $F_bdir
+    // the script will know whether it is symlinked or not.
+
+    $Public = dirname ($_SERVER['SCRIPT_FILENAME']);
+    $this-> basedir = basename (($Public !== $F_bdir) ? $Public : $F_bdir);
+
+    // This is for the options override via _GET parameter
+    foreach (self::OPT_ARGUMENT as $opt => $property) {
+      if (isset ($_GET[$opt]) && property_exists ($this, $property)) {
+        $this-> $property = ((bool)filter_input (INPUT_GET, $opt, FILTER_UNSAFE_RAW));
+      } unset ($property, $opt);
+    }
+
+    // --
+    // Since this script is a part of bigger project, but at the same time
+    // works as a standalone script, replacement for composer and alike follows.
+    // If `H`(ardcoder)\Api class isn't loaded correctly, we need compatibility mimicry.
+      defined ('HNG_ACTIVE_PLATFORM') and (
+        !defined ('Api')
+          and define ('Api', Api::do())
+      )
+      or
+        $this-> hngts_dependancy();
+
+  }
+
   private function catmice_file_collector (string $dir) {
     /// Main operation method
 
@@ -305,11 +360,9 @@ new class (0, false, true, true, true, false, __DIR__) {
       , 'Content-Security-Policy' => "child-src 'self';"
       , 'Cache-Control' => "public, "
         . ((is_float ($hours))  ? 'immutable' : 'must-revalidate')
-        . ", max-age={$seconds}", 'X-Content-Type-Options' => "nosniff"
-      , 'Last-Modified' => "$lastMod GMT"
+        . ", max-age={$seconds}", 'Last-Modified' => "$lastMod GMT"
       , 'Expires' => "$expires GMT"
-      , 'X-hng-server-domain' => "{$_SERVER['SERVER_NAME']}:{$_SERVER['SERVER_PORT']}"
-      , 'X-hng-server-stamp' => date (DATE_ATOM)
+      , 'X-Content-Type-Options' => "nosniff"
       , 'X-powered-By' => "hardcoder-catmice"
     ] as $key => $value) {
       header ("{$key}: {$value}");
@@ -328,34 +381,6 @@ new class (0, false, true, true, true, false, __DIR__) {
         . ob_get_length());
     ob_end_flush();
     exit;
-  }
-
-  private function hook____ (string $F_bdir, &$Public) {
-    ///
-    // According to the $Public value and passed on $F_bdir
-    // the script will know whether it is symlinked or not.
-
-    $Public = dirname ($_SERVER['SCRIPT_FILENAME']);
-    $this-> basedir = basename (($Public !== $F_bdir) ? $Public : $F_bdir);
-
-    // This is for the options override via _GET parameter
-    foreach (self::OPT_ARGUMENT as $opt => $property) {
-      if (isset ($_GET[$opt]) && property_exists ($this, $property)) {
-        $this-> $property = ((bool)filter_input (INPUT_GET, $opt, FILTER_UNSAFE_RAW));
-      } unset ($property, $opt);
-    }
-
-    // --
-    // Since this script is a part of bigger project, but at the same time
-    // works as a standalone script, replacement for composer and alike follows.
-    // If `H`(ardcoder)\Api class isn't loaded correctly, we need compatibility mimicry.
-      defined ('HNG_ACTIVE_PLATFORM') and (
-        !defined ('Api')
-          and define ('Api', Api::do())
-      )
-      or
-        $this-> hngts_dependancy();
-
   }
 
   private function hngts_dependancy() {
@@ -495,33 +520,6 @@ new class (0, false, true, true, true, false, __DIR__) {
         }
       }
     ]);
-  }
-
-  public function __construct (...$p) {
-    /// Check
-    (count ($p) !== 7) and die (
-      'Catmice' . __FUNCTION__
-      . 'or error: args required 7; less found.'
-      . PHP_EOL . 'Don\'t mess too much with parameters.'
-    );
-
-    // set ..
-    foreach ([
-      'sig' => $p[4],
-      'squeeze' => $p[1],
-      'comments' => $p[2],
-      'blockCmt' => $p[3],
-      'expandExternals' => $p[5],
-    ] as $oP => $BoolVal) {
-      $this-> $oP = ((bool)$BoolVal);
-      unset ($oP, $BoolVal);
-    } $this-> hours = ((int)$p[0]);
-    // .. and go.
-    $this-> hook____ ($p[6], $Public);
-    !in_array (Observer-> doctype, array_keys (self::DIRECTORY_MASK))
-    and die ('Not a proper request.') // <- sEcuritate.
-    or // .. and main Request and Response - done !
-      $this-> catmice_file_collector ($Public);
   }
 
 };
