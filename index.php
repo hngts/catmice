@@ -354,15 +354,14 @@ new class (0, false, true, true, true, false, __DIR__) {
     if ($this-> sig) $catmice .= $this-> catmice_signature ($id);
     //~
     foreach ([
-      'Pragma' => "public"
-      , 'Timing-Allow-Origin' => "*"
+      'Timing-Allow-Origin' => "*"
       , 'Content-Allow-Origin' => "*"
       , 'Content-Security-Policy' => "child-src 'self';"
       , 'Cache-Control' => (($hours < self::ZERO_POINT_IMMUTABLE) ? 'no-cache'
         : "max-age={$seconds}, immutable"), 'Last-Modified' => "$lastMod GMT"
       , 'Expires' => "$expires GMT"
       , 'X-Content-Type-Options' => "nosniff"
-      , 'X-powered-By' => "hardcoder-catmice"
+      //~ , 'X-powered-By' => "hardcoder-catmice"
     ] as $key => $value) {
       header ("{$key}: {$value}");
       unset ($value, $key);
