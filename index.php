@@ -358,9 +358,8 @@ new class (0, false, true, true, true, false, __DIR__) {
       , 'Timing-Allow-Origin' => "*"
       , 'Content-Allow-Origin' => "*"
       , 'Content-Security-Policy' => "child-src 'self';"
-      , 'Cache-Control' => "public, "
-        . ((is_float ($hours))  ? 'immutable' : 'must-revalidate')
-        . ", max-age={$seconds}", 'Last-Modified' => "$lastMod GMT"
+      , 'Cache-Control' => (($hours < self::ZERO_POINT_IMMUTABLE) ? 'no-cache'
+        : "max-age={$seconds}, immutable"), 'Last-Modified' => "$lastMod GMT"
       , 'Expires' => "$expires GMT"
       , 'X-Content-Type-Options' => "nosniff"
       , 'X-powered-By' => "hardcoder-catmice"
