@@ -351,17 +351,20 @@ new class (0, false, true, true, true, false, __DIR__) {
     $expires = gmdate ($gdstring, ($t + $seconds));
     $lastMod = gmdate ($gdstring, ((int)($t - ($t / 20))));
     if ($this-> sig) $catmice .= $this-> catmice_signature ($id);
-    //~
-    foreach ([
+
+    $headerList = array_merge ([
       'Timing-Allow-Origin' => "*"
       , 'Content-Allow-Origin' => "*"
       , 'Cache-Control' => (($hours < self::ZERO_POINT_IMMUTABLE) ? 'no-cache'
         : "max-age={$seconds}, immutable"), 'Last-Modified' => "$lastMod GMT"
       , 'Expires' => "$expires GMT"
-      , 'Content-Security-Policy' => "default-src 'none'"
-      , 'X-Content-Security-Policy' => "default-src 'none'"
       , 'X-Content-Type-Options' => "nosniff"
-    ] as $key => $value) {
+    ], (($id === 'cat') ? [] : [
+      'Content-Security-Policy' => "default-src 'none'"
+      , 'X-Content-Security-Policy' => "default-src 'none'"
+    ]));
+
+    foreach ($headerList as $key => $value) {
       header ("{$key}: {$value}");
       unset ($value, $key);
     }
