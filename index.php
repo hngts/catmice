@@ -355,12 +355,12 @@ new class (0, false, true, true, true, false, __DIR__) {
     foreach ([
       'Timing-Allow-Origin' => "*"
       , 'Content-Allow-Origin' => "*"
-      , 'Content-Security-Policy' => "child-src 'self';"
       , 'Cache-Control' => (($hours < self::ZERO_POINT_IMMUTABLE) ? 'no-cache'
         : "max-age={$seconds}, immutable"), 'Last-Modified' => "$lastMod GMT"
       , 'Expires' => "$expires GMT"
+      , 'Content-Security-Policy' => "default-src 'none'"
+      , 'X-Content-Security-Policy' => "default-src 'none'"
       , 'X-Content-Type-Options' => "nosniff"
-      //~ , 'X-powered-By' => "hardcoder-catmice"
     ] as $key => $value) {
       header ("{$key}: {$value}");
       unset ($value, $key);
