@@ -130,16 +130,15 @@ new class (0, false, true, true, true, false, __DIR__) {
   private function catmice_file_collector (string $dir) {
     /// Main operation method
 
-    $dirlevel1 = Api-> dspa (dirname ($dir), $this-> basedir);
     [$id, $extension, $content_type] = match (Observer-> doctype) {
       default => [ null, null, null ]
       , 'style' => [ 'cat', 'css', 'text/css' ]
       , 'script' => [ 'mice', 'js', 'text/javascript' ]
-    }; $content_type = 'Content-Type: '
-      . $content_type . ';charset=utf-8';
+    };
 
-    $dirlevel2 = Api-> dspa ($dirlevel1,
-    self::DIRECTORY_MASK[Observer-> doctype]);
+    $content_type = "Content-Type: $content_type; charset=utf-8";
+    $dirlevel1 = Api-> dspa (dirname($dir), $this-> basedir);
+    $dirlevel2 = Api-> dspa ($dirlevel1, self::DIRECTORY_MASK[Observer-> doctype]);
 
     $TestHours = $hours = (Observer-> filterget['hrs'] ?? $this-> hours);
     $hours = (($TestHours < 1 && self::ZERO_HOUR_SKEPTIC)
