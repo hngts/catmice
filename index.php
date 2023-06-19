@@ -124,7 +124,6 @@ new class (0, false, true, true, true, false, __DIR__) {
       )
       or
         $this-> hngts_dependancy();
-
   }
 
   private function catmice_file_collector (string $dir) {
@@ -306,17 +305,8 @@ new class (0, false, true, true, true, false, __DIR__) {
 
         $extension = pathinfo ($suspect, PATHINFO_EXTENSION);
         $file_mime = apacheMimeTypes ($extension, $MimeLocation);
-        $file_mime = match ($extension) {
-          default => 'txt'
-          , 'otf' => 'font/opentype'
-          , 'woff' => 'application/x-font-woff'
-          , 'woff2' => 'application/x-font-woff2'
-          , 'eot' => 'application/vnd.ms-fontobject'
-          , 'ttf', 'ttc' => 'application/x-font-ttf'
-          , in_array ($extension, [
-            'svg', 'svgz'
-            ]) => 'not_compliant'
-        };
+        if (in_array ($extension, [ 'svg', 'svgz' ]))
+          $file_mime = 'not_compliant';
 
         return
           ((!$file_mime || $file_mime === 'not_compliant')
@@ -399,14 +389,14 @@ new class (0, false, true, true, true, false, __DIR__) {
       $ext = (($extension === '') ? 'txt' : $extension);
       if (is_file ($serialized)) {
         //
-        $MimeType = unserialize (@file_get_contents ($serialized));
+        $MimeType = unserialize (file_get_contents ($serialized));
         // For hntgs-yards, mimetype should always give false.
         if (is_array ($MimeType)) return $MimeType[$ext] ?? false;
 
       }
       else {
         //! BlyAfiful block of code. :)
-        $MimeType = file ("$apache/mime.types", 1|2|4);
+        $MimeType = file ("$apache/$basename", 1|2|4);
         is_array ($MimeType) or die (__FUNCTION__ . ' says: '
         . "Raw '$basename' whitelist file creation failed.");
         $Mtype = []; foreach ($MimeType as $n => $line) {
