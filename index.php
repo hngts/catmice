@@ -10,7 +10,7 @@ use \H\Api; /*:
     (optional: hntgs);
 
 */
-new class (0, false, true, true, true, false, __DIR__) {
+new class (0, false, false, false, false, false, __DIR__) {
   /*:-> get --- STATIC CONFIGURABLE PORTION ---
 
     1st:hrs     -     int               'hours_for_cache'
@@ -257,63 +257,9 @@ new class (0, false, true, true, true, false, __DIR__) {
       // From url (param) to url (..base64,989lkJFklskdfjlgjer ...) if plausable.
       $MimeLocation = Api-> dspa ($dir, self::TRADEMARK);
       $catmice = preg_replace_callback ('/\((.*?)\)/',
-      function ($extern) use ($MimeLocation) {
-
-        $suspect = trim ($extern[1]);
-        $first_character = $suspect[0];
-        $last_character = mb_substr ($suspect, -1);
-
-        if ($first_character === $last_character
-          && in_array ($first_character, [ '"', "'" ]))
-            $suspect = trim (mb_substr ($suspect, 1, -1));
-
-        if ($suspect[0] !== '/') $suspect = "/$suspect";
-
-        $BoolTest = substr (str_replace
-          ('.php', '', $suspect), 1);
-
-        $suspect = ((str_replace //~ The following is for "Hngts RGB and media handlers"
-          ([ 'rgb?',     //~ Rgb is for (strict) images and/or pictures  ..
-            'media?',   //~ Media is all others - except those in cat, mice or xtx ..
-          ], "", $BoolTest) !== $BoolTest) ? true
-          : @realpath ("{$_SERVER['DOCUMENT_ROOT']}$suspect")
-        );
-
-        if (!is_string ($suspect) && is_bool ($suspect)) {
-          if (!$suspect) return $extern[0];
-          else {
-
-            $Bomb = explode ('?', $BoolTest);
-            $Dirty = mb_strpos ($Bomb[1], '&');
-
-            if ($Dirty !== false)
-              $Bomb[1] = mb_substr ($Bomb[1], 0, $Dirty);
-
-            $suspect = explode ('=', $Bomb[1]);
-            $Bomb[1] = $suspect;
-
-            $suspect = Api-> dspa ($_SERVER['DOCUMENT_ROOT'],
-              $Bomb[0], str_replace ('|', DSP, $Bomb[1][1]).".{$Bomb[1][0]}");
-
-            unset ($Dirty, $Bomb);
-          }
-
-        }
-
-        if (!file_exists ($suspect))
-          return $extern[0]; // Final breakpoint
-
-        $extension = pathinfo ($suspect, PATHINFO_EXTENSION);
-        $file_mime = apacheMimeTypes ($extension, $MimeLocation);
-        if (in_array ($extension, [ 'svg', 'svgz' ]))
-          $file_mime = 'not_compliant';
-
-        return
-          ((!$file_mime || $file_mime === 'not_compliant')
-          ? $extern[0] : "(data:$file_mime;charset=utf8;base64,"
-          . base64_encode (file_get_contents ($suspect)) . ')');
-
-      }, $catmice);
+        function ($extern) use ($MimeLocation) {
+          return static::ExpandExternals ($extern, $MimeLocation);
+      } , $catmice);
     }
 
     $this-> headers_and_out ($hours, $content_type, $id, $catmice);
@@ -372,6 +318,65 @@ new class (0, false, true, true, true, false, __DIR__) {
     ob_end_flush();
     exit;
   }
+
+  private static function ExpandExternals ($extern, $MimeLocation) {
+    ///
+    $suspect = trim ($extern[1]);
+    $first_character = $suspect[0];
+    $last_character = mb_substr ($suspect, -1);
+
+    if ($first_character === $last_character
+      && in_array ($first_character, [ '"', "'" ]))
+        $suspect = trim (mb_substr ($suspect, 1, -1));
+
+    if ($suspect[0] !== '/') $suspect = "/$suspect";
+
+    $BoolTest = substr (str_replace
+      ('.php', '', $suspect), 1);
+
+    $suspect = ((str_replace //~ The following is for "Hngts RGB and media handlers"
+      ([ 'rgb?',     //~ Rgb is for (strict) images and/or pictures  ..
+        'media?',   //~ Media is all others - except those in cat, mice or xtx ..
+      ], "", $BoolTest) !== $BoolTest) ? true
+      : @realpath ("{$_SERVER['DOCUMENT_ROOT']}$suspect")
+    );
+
+    if (!is_string ($suspect) && is_bool ($suspect)) {
+      if (!$suspect) return $extern[0];
+      else {
+
+        $Bomb = explode ('?', $BoolTest);
+        $Dirty = mb_strpos ($Bomb[1], '&');
+
+        if ($Dirty !== false)
+          $Bomb[1] = mb_substr ($Bomb[1], 0, $Dirty);
+
+        $suspect = explode ('=', $Bomb[1]);
+        $Bomb[1] = $suspect;
+
+        $suspect = Api-> dspa ($_SERVER['DOCUMENT_ROOT'],
+          $Bomb[0], str_replace ('|', DSP, $Bomb[1][1]).".{$Bomb[1][0]}");
+
+        unset ($Dirty, $Bomb);
+      }
+
+    }
+
+    if (!file_exists ($suspect))
+      return $extern[0]; // Final breakpoint
+
+    $extension = pathinfo ($suspect, PATHINFO_EXTENSION);
+    $file_mime = apacheMimeTypes ($extension, $MimeLocation);
+    if (in_array ($extension, [ 'svg', 'svgz' ]))
+      $file_mime = 'not_compliant';
+
+    return
+      ((!$file_mime || $file_mime === 'not_compliant')
+      ? $extern[0] : "(data:$file_mime;charset=utf8;base64,"
+      . base64_encode (file_get_contents ($suspect)) . ')');
+
+  }
+
 
   private function hngts_dependancy() {
     /// Generates missing and vital data from hngts toolset
@@ -475,9 +480,9 @@ new class (0, false, true, true, true, false, __DIR__) {
           } return implode (EOL, $a);
         }
 
-        public function no_block_comments (string $a):string {
+        public function no_block_comments (string $a, string $r = ''):string {
           /// Remove C-style block comments from strings
-          return preg_replace ('!/\*.*?\*/!s', EOL, $a);
+          return preg_replace ('!/\*.*?\*/!s', $r, $a);
         }
 
         public function one_line (string $a, bool $too_ugly = false) {
