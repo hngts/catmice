@@ -10,7 +10,7 @@ use \H\Api; /*:
     (optional: hntgs);
 
 */
-new class (0, false, false, false, false, false, __DIR__) {
+new class (0, false, true, true, true, false, __DIR__) {
   /*:-> get --- STATIC CONFIGURABLE PORTION ---
 
     1st:hrs     -     int               'hours_for_cache'
