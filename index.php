@@ -468,16 +468,27 @@ new class (0, false, true, true, true, false, __DIR__) {
         public function no_comments (string $x = "\057\057", string $a = '', array $merge = []):string {
           /// Remove '$x+? ' line comments from strings
 
-          $a = explode (EOL, $a); if (count ($a) >= 1) {
-            $merged = \array_merge ([NSP, "\176", ' ' ], $merge);
-            foreach ($a as $int => $b)
-            { foreach ($merged as $sample)
-            { $p = mb_strpos ($b, "$x$sample");
-              if ($p !== false)
-                $a[$int] = mb_substr ($b, 0, $p);
-              unset ($p, $sample);
-            } unset ($b, $int); }
-          } return implode (EOL, $a);
+          $a = explode (EOL, $a);
+          if (count ($a) >= 1) {
+
+            $diff = null;
+            $merged = array_merge ([P::C['esc'], P::C['t'], ' '], $merge);
+            foreach ($a as $int => $b) {
+              foreach ($merged as $sample) {
+                $p = mb_strpos ($b, "$x$sample");
+                if ($p !== false) {
+                  $a[$int] = mb_substr ($b, 0, $p);
+                  $diff = $int;
+                } unset ($p, $sample);
+              }
+
+              if (is_int ($diff) && trim ($a[$diff]) === '') {
+                unset ($a[$diff]); $diff = null;
+              } unset ($b, $int);
+            }
+          }
+
+          return implode (EOL, $a);
         }
 
         public function no_block_comments (string $a, string $r = ''):string {
