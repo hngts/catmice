@@ -472,7 +472,7 @@ new class (0, false, true, true, true, false, __DIR__) {
           if (count ($a) >= 1) {
 
             $diff = null;
-            $merged = array_merge (["\134", "\176", ' '], $merge);
+            $merged = array_merge (["\176", "\134", ' '], $merge);
             foreach ($a as $int => $b) {
               foreach ($merged as $sample) {
                 $p = mb_strpos ($b, "$x$sample");
