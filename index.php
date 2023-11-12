@@ -479,6 +479,7 @@ new class (0, false, true, true, true, false, __DIR__) {
                 if ($p !== false) {
                   $a[$int] = mb_substr ($b, 0, $p);
                   $diff = $int;
+                  break;
                 } unset ($p, $sample);
               }
 
