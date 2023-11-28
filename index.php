@@ -10,6 +10,7 @@ use \H\Api; /*:
     (optional: hntgs);
 
 */
+
 new class (0, false, true, true, true, false, __DIR__) {
   /*:-> get --- STATIC CONFIGURABLE PORTION ---
 
@@ -99,7 +100,7 @@ new class (0, false, true, true, true, false, __DIR__) {
       $this-> catmice_file_collector ($Public);
   }
 
-  private function hook____ (string $F_bdir, &$Public) {
+  private function hook____ (string $F_bdir, &$Public): void {
     ///
     // According to the $Public value and passed on $F_bdir
     // the script will know whether it is symlinked or not.
@@ -126,7 +127,7 @@ new class (0, false, true, true, true, false, __DIR__) {
         $this-> hngts_dependancy();
   }
 
-  private function catmice_file_collector (string $dir) {
+  private function catmice_file_collector (string $dir): void {
     /// Main operation method
 
     [$id, $extension, $content_type] = match (Observer-> doctype) {
@@ -265,7 +266,7 @@ new class (0, false, true, true, true, false, __DIR__) {
     $this-> headers_and_out ($hours, $content_type, $id, $catmice);
   }
 
-  private function catmice_signature (string $id) {
+  private function catmice_signature (string $id): string {
     /// Reveal or hide minor details about `self-decisions`.
 
     $doctype = Observer-> doctype; return EOL . EOL
@@ -278,7 +279,7 @@ new class (0, false, true, true, true, false, __DIR__) {
     . ':*/';
   }
 
-  private function headers_and_out (int|float $hours, string $content_type, string $id, string $catmice) {
+  private function headers_and_out (int|float $hours, string $content_type, string $id, string $catmice): never {
     ///
 
     $t = time();
@@ -319,7 +320,7 @@ new class (0, false, true, true, true, false, __DIR__) {
     exit;
   }
 
-  private static function ExpandExternals ($extern, $MimeLocation) {
+  private static function ExpandExternals ($extern, $MimeLocation): string {
     ///
     $suspect = trim ($extern[1]);
     $first_character = $suspect[0];
@@ -377,11 +378,10 @@ new class (0, false, true, true, true, false, __DIR__) {
 
   }
 
-
-  private function hngts_dependancy() {
+  private function hngts_dependancy(): void {
     /// Generates missing and vital data from hngts toolset
 
-    function apacheMimeTypes (string $extension = '', string $basedir = '') {
+    function apacheMimeTypes (string $extension = '', string $basedir = ''): string|false {
       /*: This function is a substitue for native 'mime_content_type';
         $pathinfo = pathinfo ($_SERVER['SCRIPT_FILENAME'];
         $mime_content_type = array_merge ($pathinfo, [
@@ -492,12 +492,12 @@ new class (0, false, true, true, true, false, __DIR__) {
           return implode (EOL, $a);
         }
 
-        public function no_block_comments (string $a, string $r = ''):string {
+        public function no_block_comments (string $a, string $r = ''): string {
           /// Remove C-style block comments from strings
           return preg_replace ('!/\*.*?\*/!s', $r, $a);
         }
 
-        public function one_line (string $a, bool $too_ugly = false) {
+        public function one_line (string $a, bool $too_ugly = false): string {
           /// Entire string to one line - ugly or uglier.
           return preg_replace ('/\s+/',
             ((!$too_ugly) ? ' ' : ''),
