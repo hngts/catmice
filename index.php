@@ -130,16 +130,10 @@ new class (0, false, true, true, true, false, __DIR__) {
   private function catmice_file_collector (string $dir): void {
     /// Main operation method
 
-    [$id, $extension, $content_type] = match (Observer-> doctype) {
-      default => [ null, null, null ]
-      , 'style' => [ 'cat', 'css', 'text/css' ]
-      , 'script' => [ 'mice', 'js', 'text/javascript' ]
-    };
+    [$id, $extension, $content_type] = $this-> match_exact_type();
 
-    $content_type = "Content-Type: $content_type; charset=utf-8";
     $dirlevel1 = Api-> dspa (dirname($dir), $this-> basedir);
     $dirlevel2 = Api-> dspa ($dirlevel1, self::DIRECTORY_MASK[Observer-> doctype]);
-
     $TestHours = $hours = (Observer-> filterget['hrs'] ?? $this-> hours);
     $hours = (($TestHours < 1 && self::ZERO_HOUR_SKEPTIC)
       ? self::ZERO_POINT_IMMUTABLE : ((int)$TestHours)
@@ -149,6 +143,72 @@ new class (0, false, true, true, true, false, __DIR__) {
     $trademark = Api-> dspa ($dirlevel2, self::TRADEMARK);
     !is_dir ($trademark) and mkdir ($trademark, 0775, true);
 
+    $catmice = '';
+    $this-> collect_iterator ($id, $extension, $dirlevel1, $dirlevel2, $collect);
+    foreach ($collect as $n => $collected) {
+      $catmice .= trim ($collected) . EOL . EOL;
+      unset ($collect[$n], $collected, $n);
+    } unset ($collect);
+
+    if ($extension === 'css' && self::AT_CHARSET) {
+      $At = '@charset "UTF-8";'; $catmice = $At
+        . EOL . str_replace ($At, '', $catmice);
+      unset ($At);
+    }
+
+    if ($this-> squeeze === true) {
+
+      $this-> blockCmt = false;
+      $this-> comments = false;
+
+      $catmice = Api-> no_block_comments ($catmice);
+
+      if ($extension === 'js')
+        $catmice = Api-> no_comments (a: $catmice);
+
+      $catmice = Api-> one_line ($catmice);
+    }
+    else {
+
+      if ($this-> blockCmt !== true)
+        $catmice = Api-> no_block_comments ($catmice);
+
+      if ($extension === 'js' && !$this-> comments)
+      $catmice = Api-> no_comments (a: $catmice);
+    }
+
+    if ($this-> expandExternals && $extension === 'css') {
+      // From url (param) to url (..base64,989lkJFklskdfjlgjer ...) if plausable.
+      $MimeLocation = Api-> dspa ($dir, self::TRADEMARK);
+      $catmice = preg_replace_callback ('/\((.*?)\)/',
+        fn($extern) => $this-> expand_externals ($extern, $MimeLocation),
+        $catmice
+      );
+    }
+
+    $this-> headers_and_out ($hours, $content_type, $id, $catmice);
+    unset ($catmice);
+  }
+
+  private function match_exact_type(): array {
+    /// Self-explanatory
+
+    return match (Observer-> doctype) {
+      default => [ 'x', 'txt', 'text/plain' ]
+      , 'style' => [ 'cat', 'css', 'text/css' ]
+      , 'script' => [ 'mice', 'js', 'text/javascript' ]
+    };
+  }
+
+  private function collect_iterator (
+    string $id
+    , string $extension
+    , string $dirlevel1
+    , string $dirlevel2
+    , ?array &$collect = null
+  ): void {
+    /// Main iterator
+
     $collect = [];
     $catmice = explode ('~', Observer-> filterget[$id]);
 
@@ -157,6 +217,7 @@ new class (0, false, true, true, true, false, __DIR__) {
 
       $suspect = str_replace ('|', DSP, $suspect);
       $first = mb_substr ($suspect, 0, 1);
+
       [ $job, $multi, $target ] = match ($first) {
         default =>  [ 'literal', 'no', $dirlevel2 . DSP ]
         , "\044" => [ 'concat', 'yes',  $dirlevel2 . DSP . 'chain.' ]
@@ -221,106 +282,9 @@ new class (0, false, true, true, true, false, __DIR__) {
 
     }
 
-    $catmice = '';
-    foreach ($collect as $n => $collected) {
-      $catmice .= trim ($collected) . EOL . EOL;
-      unset ($collect[$n], $collected, $n);
-    } unset ($collect);
-
-    if ($extension === 'css' && self::AT_CHARSET) {
-      $At = '@charset "UTF-8";'; $catmice = $At
-        . EOL . str_replace ($At, '', $catmice);
-      unset ($At);
-    }
-
-    if ($this-> squeeze === true) {
-
-      $this-> blockCmt = false;
-      $this-> comments = false;
-
-      $catmice = Api-> no_block_comments ($catmice);
-
-      if ($extension === 'js')
-        $catmice = Api-> no_comments (a: $catmice);
-
-      $catmice = Api-> one_line ($catmice);
-    }
-    else {
-
-      if ($this-> blockCmt !== true)
-        $catmice = Api-> no_block_comments ($catmice);
-
-      if ($extension === 'js' && !$this-> comments)
-      $catmice = Api-> no_comments (a: $catmice);
-    }
-
-    if ($this-> expandExternals && $extension === 'css') {
-      // From url (param) to url (..base64,989lkJFklskdfjlgjer ...) if plausable.
-      $MimeLocation = Api-> dspa ($dir, self::TRADEMARK);
-      $catmice = preg_replace_callback ('/\((.*?)\)/',
-        function ($extern) use ($MimeLocation) {
-          return static::ExpandExternals ($extern, $MimeLocation);
-      } , $catmice);
-    }
-
-    $this-> headers_and_out ($hours, $content_type, $id, $catmice);
   }
 
-  private function catmice_signature (string $id): string {
-    /// Reveal or hide minor details about `self-decisions`.
-
-    $doctype = Observer-> doctype; return EOL . EOL
-      . '/**: ' . "Hardcoder::catmice `$doctype` against: \"" . Observer-> filterget[$id] ."\""
-        . EOL . EOL . "\t- Squeezed: " . var_export ($this-> squeeze, true). EOL . (($doctype === 'style')
-          ? "\t- Expand Externals: " . var_export ($this-> expandExternals, true) . EOL
-          : "\t- Comments persist: " . var_export ($this-> comments, true) . EOL
-        ) . "\t- Block-Comments persist: " . var_export ($this-> blockCmt, true)
-        . EOL . EOL
-    . ':*/';
-  }
-
-  private function headers_and_out (int|float $hours, string $content_type, string $id, string $catmice): never {
-    ///
-
-    $t = time();
-    $gdstring = 'D, d M Y H:i:s';
-    $seconds = ((int)(60 * (60 * $hours)));
-    $expires = gmdate ($gdstring, ($t + $seconds));
-    $lastMod = gmdate ($gdstring, ((int)($t - ($t / 20))));
-    if ($this-> sig) $catmice .= $this-> catmice_signature ($id);
-
-    $headerList = array_merge ([
-      'Timing-Allow-Origin' => "*"
-      , 'Content-Allow-Origin' => "*"
-      , 'Cache-Control' => (($hours < self::ZERO_POINT_IMMUTABLE) ? 'no-cache'
-        : "max-age={$seconds}, immutable"), 'Last-Modified' => "$lastMod GMT"
-      , 'Expires' => "$expires GMT"
-      , 'X-Content-Type-Options' => "nosniff"
-    ], (($id === 'cat') ? [] : [
-      'Content-Security-Policy' => "default-src 'none'"
-      , 'X-Content-Security-Policy' => "default-src 'none'"
-    ]));
-
-    foreach ($headerList as $key => $value) {
-      header ("{$key}: {$value}");
-      unset ($value, $key);
-    }
-
-    header ($content_type);
-    ob_start();
-      ob_start ('ob_gzhandler');
-        header ("Transfer-Encoding: gzip");
-        echo trim ($catmice); unset (
-          $catmice, $lastMod, $expires,
-          $seconds, $gdstring);
-      ob_end_flush();
-      header ('Content-Length: '
-        . ob_get_length());
-    ob_end_flush();
-    exit;
-  }
-
-  private static function ExpandExternals ($extern, $MimeLocation): string {
+  private function expand_externals (array $extern, string $MimeLocation): string {
     ///
     $suspect = trim ($extern[1]);
     $first_character = $suspect[0];
@@ -376,6 +340,64 @@ new class (0, false, true, true, true, false, __DIR__) {
       ? $extern[0] : "(data:$file_mime;charset=utf8;base64,"
       . base64_encode (file_get_contents ($suspect)) . ')');
 
+  }
+
+  private function catmice_signature (string $id): string {
+    /// Reveal or hide minor details about `self-decisions`.
+
+    $doctype = Observer-> doctype; return EOL . EOL
+      . '/**: ' . "Hardcoder::catmice `$doctype` against: \"" . Observer-> filterget[$id] ."\""
+        . EOL . EOL . "\t- Squeezed: " . var_export ($this-> squeeze, true). EOL . (($doctype === 'style')
+          ? "\t- Expand Externals: " . var_export ($this-> expandExternals, true) . EOL
+          : "\t- Comments persist: " . var_export ($this-> comments, true) . EOL
+        ) . "\t- Block-Comments persist: " . var_export ($this-> blockCmt, true)
+        . EOL . EOL
+    . ':*/';
+  }
+
+  private function headers_and_out (
+    int|float $hours
+    , string $content_type
+    , string $id
+    , string &$catmice
+  ): never {
+    ///
+
+    $time = time();
+    $gdstring = 'D, d M Y H:i:s';
+    $seconds = ((int)(60 * (60 * $hours)));
+    $expires = gmdate ($gdstring, ($time + $seconds));
+    $lastMod = gmdate ($gdstring, ((int)($time - ($time / 20))));
+    if ($this-> sig) $catmice .= $this-> catmice_signature ($id);
+
+    $headerList = array_merge ([
+      'Timing-Allow-Origin' => "*"
+      , 'Content-Allow-Origin' => "*"
+      , 'Cache-Control' => (($hours < self::ZERO_POINT_IMMUTABLE) ? 'no-cache'
+        : "max-age={$seconds}, immutable"), 'Last-Modified' => "$lastMod GMT"
+      , 'Expires' => "$expires GMT"
+      , 'X-Content-Type-Options' => "nosniff"
+    ], (($id === 'cat') ? [] : [
+      'Content-Security-Policy' => "default-src 'none'"
+      , 'X-Content-Security-Policy' => "default-src 'none'"
+    ]));
+
+    foreach ($headerList as $key => $value) {
+      header ("{$key}: {$value}");
+      unset ($value, $key);
+    }
+
+    header ("Content-Type: $content_type; charset=utf-8");
+    ob_start(); ob_start ('ob_gzhandler');
+      header ("Transfer-Encoding: gzip");
+      echo trim ($catmice); unset (
+        $catmice, $lastMod, $expires,
+        $seconds, $gdstring
+      ); ob_end_flush();
+      header ('Content-Length: '
+        . ob_get_length());
+    ob_end_flush();
+    exit;
   }
 
   private function hngts_dependancy(): void {
@@ -492,7 +514,7 @@ new class (0, false, true, true, true, false, __DIR__) {
           return implode (EOL, $a);
         }
 
-        public function no_block_comments (string $a, string $r = ''): string {
+        public function no_block_comments (string $a, string $r = ''):string {
           /// Remove C-style block comments from strings
           return preg_replace ('!/\*.*?\*/!s', $r, $a);
         }
