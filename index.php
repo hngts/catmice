@@ -387,7 +387,7 @@ new class (0, false, true, true, true, false, __DIR__) {
   }
 
   private function expansion_summarum (
-    string $original, string $ext, bool|string $mime, string $suspect, bool $stream
+    string $original, string $ext, bool|string $mime, bool|string $suspect, bool $stream
   ): string { /// Finally returns encoded target or gives back path as is
     if (in_array ($ext, [ 'svg', 'svgz' ])) $mime = 'not_compliant';
     return ((!$suspect || !$mime || $mime === 'not_compliant')
