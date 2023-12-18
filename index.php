@@ -6,9 +6,8 @@ declare (strict_types = 1);
 
 use \H\Api; /*:
 
-    requires: PHPv>=8.2 w mb_string;
+    requires: PHPv>=8.2 w ctype & mb_string;
     (optional: hntgs);
-
 */
 
 new class (0, false, true, true, true, false, __DIR__) {
@@ -65,13 +64,21 @@ new class (0, false, true, true, true, false, __DIR__) {
         'ex'  =>  'expandExternals',
   ];
 
-  private ?int $hours = null;                 /// Constructor Param 1
-  private ?bool $squeeze = null;              /// Constructor Param 2
-  private ?bool $comments = null;             /// Constructor Param 3
-  private ?bool $blockCmt = null;             /// Constructor Param 4
-  private ?bool $sig = null;                  /// Constructor Param 5
-  private ?bool $expandExternals = null;      /// Constructor Param 6
-  private ?string $basedir = null;            /// Constructor Param 7
+  private const HALT = 'Not a proper request.'; /// Common message.
+
+  private ?int $hours = null;                   /// Constructor Param 1
+  private ?bool $squeeze = null;                /// Constructor Param 2
+  private ?bool $comments = null;               /// Constructor Param 3
+  private ?bool $blockCmt = null;               /// Constructor Param 4
+  private ?bool $sig = null;                    /// Constructor Param 5
+  private ?bool $expandExternals = null;        /// Constructor Param 6
+  private ?string $basedir = null;              /// Constructor Param 7
+
+  private ?int $pack = null;                    /// if > 0 (hours), will write to disk
+  private ?bool $template_call = null;          /// Becomes true if template call
+  private ?string $target_id = null;            /// cat or mice
+  private ?string $mimeLocation = null;         /// Path for .mime.types
+  private mixed $packed = null;                 /// Holds json template and packed.gz path
 
   public function __construct (...$p) {
     /// Check
@@ -80,7 +87,6 @@ new class (0, false, true, true, true, false, __DIR__) {
       . 'or error: args required 7; less found.'
       . PHP_EOL . 'Don\'t mess too much with parameters.'
     );
-
     // set ..
     foreach ([
       'sig' => $p[4],
@@ -88,315 +94,385 @@ new class (0, false, true, true, true, false, __DIR__) {
       'comments' => $p[2],
       'blockCmt' => $p[3],
       'expandExternals' => $p[5],
-    ] as $oP => $BoolVal) {
-      $this-> $oP = ((bool)$BoolVal);
-      unset ($oP, $BoolVal);
-    } $this-> hours = ((int)$p[0]);
-    // .. and go.
-    $this-> hook____ ($p[6], $Public);
+    ] as $oP => $boolVal) {
+      $this-> $oP = ((bool)$boolVal);
+      unset ($oP, $boolVal);
+    } // .. and go !
+    $this-> hours = ((int)$p[0]); $this-> hook____ ($p[6], $Public);
     !in_array (Observer-> doctype, array_keys (self::DIRECTORY_MASK))
-    and die ('Not a proper request.') // <- sEcuritate.
+    and die (self::HALT) // <- sEcuritate.
     or // .. and main Request and Response - done !
-      $this-> catmice_file_collector ($Public);
+      $this-> catmice_file_collector ($Public, $catmice);
   }
 
-  private function hook____ (string $F_bdir, &$Public): void {
-    ///
-    // According to the $Public value and passed on $F_bdir
-    // the script will know whether it is symlinked or not.
-
+  private function hook____ (string $fBdir, ?string &$Public = null): void {
+    /// According to the $Public value and passed on $fBdir
+    /// the script will know whether it is symlinked or not.
     $Public = dirname ($_SERVER['SCRIPT_FILENAME']);
-    $this-> basedir = basename (($Public !== $F_bdir) ? $Public : $F_bdir);
-
+    $this-> basedir = basename (($Public !== $fBdir) ? $Public : $fBdir);
     // This is for the options override via _GET parameter
     foreach (self::OPT_ARGUMENT as $opt => $property) {
       if (isset ($_GET[$opt]) && property_exists ($this, $property)) {
         $this-> $property = ((bool)filter_input (INPUT_GET, $opt, FILTER_UNSAFE_RAW));
       } unset ($property, $opt);
-    }
-
-    // --
-    // Since this script is a part of bigger project, but at the same time
-    // works as a standalone script, replacement for composer and alike follows.
-    // If `H`(ardcoder)\Api class isn't loaded correctly, we need compatibility mimicry.
+    } // --
+      // Since this script is a part of bigger project, but at the same time
+      // works as a standalone script, replacement for composer and alike follows.
+      // If `H`(ardcoder)\Api class isn't loaded correctly, we need compatibility mimicry.
       defined ('HNG_ACTIVE_PLATFORM') and (
         !defined ('Api')
           and define ('Api', Api::do())
       )
       or
         $this-> hngts_dependancy();
+    // Template path becomes ready
+    $this-> mimeLocation = Api-> dspa ($Public, self::TRADEMARK);
   }
 
-  private function catmice_file_collector (string $dir): void {
+  private function catmice_file_collector (string $dir, ?string &$catmice = null): void {
     /// Main operation method
-
-    [$id, $extension, $content_type] = $this-> match_exact_type();
-
-    $dirlevel1 = Api-> dspa (dirname($dir), $this-> basedir);
-    $dirlevel2 = Api-> dspa ($dirlevel1, self::DIRECTORY_MASK[Observer-> doctype]);
-    $TestHours = $hours = (Observer-> filterget['hrs'] ?? $this-> hours);
-    $hours = (($TestHours < 1 && self::ZERO_HOUR_SKEPTIC)
-      ? self::ZERO_POINT_IMMUTABLE : ((int)$TestHours)
-    );
-
+    $filteredID = $this-> match_exact_type ($id, $extension, $c_type);
+    $this-> template_call = str_starts_with ($filteredID, "\176\176");
+    $at_charset = ($id === 'cat' && self::AT_CHARSET);
+    $dL1 = Api-> dspa (dirname ($dir), $this-> basedir);
+    $dL2 = Api-> dspa ($dL1, self::DIRECTORY_MASK[Observer-> doctype]);
     // Automatically create missing directories (if any).
-    $trademark = Api-> dspa ($dirlevel2, self::TRADEMARK);
+    $trademark = Api-> dspa ($dL2, self::TRADEMARK);
     !is_dir ($trademark) and mkdir ($trademark, 0775, true);
 
-    $catmice = '';
-    $this-> collect_iterator ($id, $extension, $dirlevel1, $dirlevel2, $collect);
-    foreach ($collect as $n => $collected) {
-      $catmice .= trim ($collected) . EOL . EOL;
-      unset ($collect[$n], $collected, $n);
-    } unset ($collect);
-
-    if ($extension === 'css' && self::AT_CHARSET) {
-      $At = '@charset "UTF-8";'; $catmice = $At
-        . EOL . str_replace ($At, '', $catmice);
-      unset ($At);
-    }
-
-    if ($this-> squeeze === true) {
-
-      $this-> blockCmt = false;
-      $this-> comments = false;
-
-      $catmice = Api-> no_block_comments ($catmice);
-
-      if ($extension === 'js')
-        $catmice = Api-> no_comments (a: $catmice);
-
-      $catmice = Api-> one_line ($catmice);
+    if (!$this-> template_call) {
+      $this-> target_id = $id;
+      $catmice = $this-> catmice_transmute (
+        $filteredID, $extension, $dL1, $dL2, $collect);
+      $this-> cat_charset_and_sig ($at_charset, $catmice);
     }
     else {
+      $_GET = [ $id => $filteredID ]; // overwrite _GET
+      $this-> target_id = mb_substr ($filteredID, 2);
 
-      if ($this-> blockCmt !== true)
-        $catmice = Api-> no_block_comments ($catmice);
+      if (!$this-> fetch_object_template ($extension, $this-> target_id)) {
+        echo self::HALT . ' JSON missing or invalid!'; return;
+      }
 
-      if ($extension === 'js' && !$this-> comments)
-      $catmice = Api-> no_comments (a: $catmice);
+      $json = $this-> packed['json'];
+      $this-> packed = $this-> packed['gz'];
+
+      foreach (['hours', 'pack', 'sig'] as $prop)
+      $this-> $prop = $json-> $prop; unset ($prop);
+
+      if (is_file ($this-> packed)) {
+        $stored = $this-> hours_multiply ($this-> pack);
+        $since = (filemtime ($this-> packed) + $stored);
+        if (time() < $since) {
+          $catmice = gzuncompress (
+            file_get_contents ($this-> packed)
+          ); $file_ready = true;
+        }
+        else {
+          unlink ($this-> packed);
+          $file_ready = false;
+        }
+      }
+      else $file_ready = false;
+      // Bool file_ready means: stored and NOT expired
+      if ($file_ready !== true || !file_exists ($this-> packed)) {
+        $mut = (($id === 'mice') ? 'comments':'expandExternals');
+        foreach ($json-> concat as $n => $std) {
+          foreach (['squeeze', 'blockCmt', $mut]
+            as $prop) $this-> $prop = $std-> $prop;
+          unset ($prop); $catmice .= $this-> catmice_transmute
+          ($std-> $id, $extension, $dL1, $dL2, $collect);
+          unset ($std, $json-> concat[$n], $n);
+        }
+        unset ($json, $mut);
+        $this-> cat_charset_and_sig ($at_charset, $catmice);
+      }
     }
 
-    if ($this-> expandExternals && $extension === 'css') {
-      // From url (param) to url (..base64,989lkJFklskdfjlgjer ...) if plausable.
-      $MimeLocation = Api-> dspa ($dir, self::TRADEMARK);
-      $catmice = preg_replace_callback ('/\((.*?)\)/',
-        fn($extern) => $this-> expand_externals ($extern, $MimeLocation),
-        $catmice
-      );
-    }
+    $TestHours = $hours = (Observer-> filterget['hrs'] ?? $this-> hours);
+    $hours = (($TestHours < 1 && self::ZERO_HOUR_SKEPTIC)
+      ? self::ZERO_POINT_IMMUTABLE
+      : ((int)$TestHours)
+    );
 
-    $this-> headers_and_out ($hours, $content_type, $id, $catmice);
-    unset ($catmice);
+    $this-> headers_and_out ($hours, $c_type, $catmice);
   }
 
-  private function match_exact_type(): array {
+  private function match_exact_type (?string &$id, ?string &$ext, ?string &$c_type): ?string {
     /// Self-explanatory
-
-    return match (Observer-> doctype) {
-      default => [ 'x', 'txt', 'text/plain' ]
-      , 'style' => [ 'cat', 'css', 'text/css' ]
+    [$id, $ext, $c_type] = match (Observer-> doctype) {
+      'style' => [ 'cat', 'css', 'text/css' ]
       , 'script' => [ 'mice', 'js', 'text/javascript' ]
-    };
+      , default => [ 'x', 'txt', 'text/plain' ] // <- this never sets
+    }; return Observer-> filterget[$id];
+  }
+
+  private function cat_charset_and_sig (bool $condition, string &$catmice): void {
+    /// Prepends charset for css and appends block comment signature
+    if ($condition) $this-> cat_charset ($catmice);
+    if ($this-> sig) $catmice .= $this-> catmice_signature();
+  }
+
+  private function hours_multiply (int|float $hours): int {
+    /*:*/ return ((int)(60 * 60 * $hours));
+  }
+
+  private function catmice_transmute (
+    string $id, string $ext, string $dL1, string $dL2, ?array &$collect
+  ): string { /// This is most expensive method. Does 90% of the job.
+    $this-> collect_iterator ($id, $ext, $dL1, $dL2, $collect);
+    $this-> build_iterated_string ($collect, $catmice);
+    $this-> collection_mockery ($ext, $catmice);
+    if ($ext === 'css' && $this-> expandExternals)
+      // From url (param) to base64,...
+      $catmice = preg_replace_callback ('/\((.*?)\)/',
+      fn($extern) => $this-> expand_externals ($extern),
+      $catmice);
+
+    return $catmice;
+  }
+
+  private function cat_charset (string &$catmice): void {
+    /// Prepend utf-8 charset for styles
+    $At = '@charset "UTF-8";';
+    $catmice = "{$At} " . str_replace ($At, '', $catmice);
+    unset ($At); // <- mere habit.
   }
 
   private function collect_iterator (
-    string $id
-    , string $extension
-    , string $dirlevel1
-    , string $dirlevel2
-    , ?array &$collect = null
-  ): void {
-    /// Main iterator
-
+    string $q, string $ext, string $dL1, string $dL2, ?array &$collect = null
+  ): void { /// Main iterator and a bLYAatIful! piece of code
     $collect = [];
-    $catmice = explode ('~', Observer-> filterget[$id]);
-
+    $catmice = explode ("\176", $q);
     foreach ($catmice as $n => $suspect) {
       // $suspect is quite unknown here ..
-
       $suspect = str_replace ('|', DSP, $suspect);
       $first = mb_substr ($suspect, 0, 1);
-
       [ $job, $multi, $target ] = match ($first) {
-        default =>  [ 'literal', 'no', $dirlevel2 . DSP ]
-        , "\044" => [ 'concat', 'yes',  $dirlevel2 . DSP . 'chain.' ]
-        , "\045" => [ 'well', ((mb_strpos ($suspect, '.') !== false) ? 'no':'yes'), $dirlevel2 . DSP . 'pot.' ]
-        , "\056" => [ 'root', 'no', $dirlevel1 . DSP ]
-        , "\140" => [ 'trademark', 'no', $dirlevel2 . DSP . self::TRADEMARK . DSP ]
-      };
-
-      if ($job !== 'literal') $suspect = mb_substr ($suspect, 1);
-      if ($multi === 'yes')
-      {
-        $directory = "$target$suspect";
-        if (!is_dir ($directory)) {
-          $collect[] = '/* Bad `' . $job . '` for `'
-            . basename ($directory) . '` */';
-        }
-        else
-        {
-          $slice = array_slice (scandir ($directory), 2);
-            natsort ($slice);
-
-          foreach ($slice as $count => $file)
-            if (str_ends_with ($file, ".{$extension}"))
+        default =>  [ 'literal', 'no', $dL2 . DSP ]
+        , "\044" => [ 'concat', 'yes',  $dL2 . DSP . 'chain.' ]
+        , "\045" => [ 'well', // ....
+            ((mb_strpos ($suspect, '.') !== false)
+              ? 'no':'yes'), $dL2 . DSP . 'pot.'
+        ], "\056" => [ 'root', 'no', $dL1 . DSP ],
+        "\140" => [ 'trademark', 'no', $dL2 . DSP . self::TRADEMARK . DSP ]
+      }; if ($job !== 'literal') $suspect = mb_substr ($suspect, 1);
+      if ($multi === 'yes'): $directory = "$target$suspect";
+        if (!is_dir ($directory)): $collect[] = '/* Bad `'
+          . $job . '` for `' . basename ($directory) . '` */';
+        else: $slice = array_slice (scandir ($directory), 2);
+          natsort ($slice); foreach ($slice as $count => $file):
+            if (str_ends_with ($file, ".{$ext}"))
             $collect[$count] = file_get_contents ($directory. DSP .$file);
-
-          unset ($file, $count, $slice);
-        }
-      }
-      else
-      if ($multi === 'no') {
-
-        if ($job === 'well') {
+            unset ($count, $slice);
+          endforeach; unset ($file);
+        endif;
+      elseif ($multi === 'no'):
+        if ($job === 'well'):
           $suspect = explode ('.', $suspect);
           $chop = array_shift ($suspect);
-          $target .= $chop;
-          unset ($chop);
+          $target .= $chop; unset ($chop);
           $suspect = implode ('.', $suspect);
-          $target .= DSP . "$suspect.$extension";
-        }
-        else {
-          $target .= "$suspect.$extension";
-        }
-
-        if (!is_file ($target)) {
-          $collect[] = '/* Bad request for `'
-            . basename ($target).'`. */';
-        }
-        else {
-          $collect[] = file_get_contents ($target);
-        }
-
-      }
-
-      unset (
-        $suspect
-        , $n
-        , $job
-        , $multi
-        , $target
-        , $first
-      );
-
+          $target .= DSP . "$suspect.$ext";
+        else: $target .= "$suspect.$ext"; endif;
+        $collect[] = ((!is_file ($target))
+          ? '/* Bad request for `'
+              . basename ($target).'`. */'
+          : file_get_contents ($target)
+        );
+      endif;
+      unset ($suspect, $n, $job, $multi, $target, $first);
     }
-
   }
 
-  private function expand_externals (array $extern, string $MimeLocation): string {
-    ///
+  private function build_iterated_string (array &$collect, ?string &$catmice = null): void {
+    /// From collected array values to single - FAT - string
+    $catmice = ''; foreach ($collect as $n => $sample) {
+      $catmice .= trim ($sample) . EOL . EOL;
+      unset ($collect[$n], $sample, $n);
+    } $collect = null; unset ($collect);
+  }
+
+  private function collection_mockery (string $extension, string &$catmice): void {
+    /// Squeezes content, removes comments and|or appends charset declaration
+    if ($this-> squeeze === true) {
+      $this-> blockCmt = false;
+      $this-> comments = false;
+      $catmice = Api-> no_block_comments ($catmice);
+      if ($extension === 'js')
+        $catmice = Api-> no_comments (a: $catmice);
+      $catmice = Api-> one_line ($catmice);
+    }
+    else {
+      if ($this-> blockCmt !== true)
+        $catmice = Api-> no_block_comments ($catmice);
+      if ($extension === 'js' && !$this-> comments)
+        $catmice = Api-> no_comments (a: $catmice);
+    }
+  }
+
+  private function expand_externals (array $extern): string {
+    /// ##~ TODO; Implement stream_get_contents via https
     $suspect = trim ($extern[1]);
     $first_character = $suspect[0];
     $last_character = mb_substr ($suspect, -1);
-
     if ($first_character === $last_character
       && in_array ($first_character, [ '"', "'" ]))
         $suspect = trim (mb_substr ($suspect, 1, -1));
 
-    if ($suspect[0] !== '/') $suspect = "/$suspect";
+    if (!str_starts_with ($suspect, 'http')) {
 
-    $BoolTest = substr (str_replace
-      ('.php', '', $suspect), 1);
+      if ($suspect[0] !== '/') $suspect = "/$suspect";
+      $BoolTest = substr (str_replace ('.php', '', $suspect), 1);
+      $suspect = ((str_replace //~ The following is for "Hngts RGB and media handlers"
+        ([ 'rgb?',     //~ Rgb is for (strict) images and/or pictures  ..
+          'media?',   //~ Media is all others - except those in cat, mice or xtx ..
+        ], "", $BoolTest) !== $BoolTest) ? true
+        : @realpath ("{$_SERVER['DOCUMENT_ROOT']}$suspect")
+      );
 
-    $suspect = ((str_replace //~ The following is for "Hngts RGB and media handlers"
-      ([ 'rgb?',     //~ Rgb is for (strict) images and/or pictures  ..
-        'media?',   //~ Media is all others - except those in cat, mice or xtx ..
-      ], "", $BoolTest) !== $BoolTest) ? true
-      : @realpath ("{$_SERVER['DOCUMENT_ROOT']}$suspect")
-    );
+      if (!is_string ($suspect) && is_bool ($suspect)) {
+        if (!$suspect) return $extern[0];
+        else {
 
-    if (!is_string ($suspect) && is_bool ($suspect)) {
-      if (!$suspect) return $extern[0];
-      else {
+          $Bomb = explode ('?', $BoolTest);
+          $Dirty = mb_strpos ($Bomb[1], '&');
 
-        $Bomb = explode ('?', $BoolTest);
-        $Dirty = mb_strpos ($Bomb[1], '&');
+          if ($Dirty !== false)
+            $Bomb[1] = mb_substr ($Bomb[1], 0, $Dirty);
 
-        if ($Dirty !== false)
-          $Bomb[1] = mb_substr ($Bomb[1], 0, $Dirty);
+          $suspect = explode ('=', $Bomb[1]);
+          $Bomb[1] = $suspect;
 
-        $suspect = explode ('=', $Bomb[1]);
-        $Bomb[1] = $suspect;
+          $suspect = Api-> dspa ($_SERVER['DOCUMENT_ROOT'],
+            $Bomb[0], str_replace ('|', DSP, $Bomb[1][1]).".{$Bomb[1][0]}");
 
-        $suspect = Api-> dspa ($_SERVER['DOCUMENT_ROOT'],
-          $Bomb[0], str_replace ('|', DSP, $Bomb[1][1]).".{$Bomb[1][0]}");
-
-        unset ($Dirty, $Bomb);
+          unset ($Dirty, $Bomb);
+        }
       }
 
+      if (!file_exists ($suspect)) return $extern[0];
+      $extension = pathinfo ($suspect, PATHINFO_EXTENSION);
+      return $this-> expansion_summarum ($extern[0], $extension,
+        apacheMimeTypes ($extension, $this-> mimeLocation),
+        $suspect, false
+      );
     }
-
-    if (!file_exists ($suspect))
-      return $extern[0]; // Final breakpoint
-
-    $extension = pathinfo ($suspect, PATHINFO_EXTENSION);
-    $file_mime = apacheMimeTypes ($extension, $MimeLocation);
-    if (in_array ($extension, [ 'svg', 'svgz' ]))
-      $file_mime = 'not_compliant';
-
-    return
-      ((!$file_mime || $file_mime === 'not_compliant')
-      ? $extern[0] : "(data:$file_mime;charset=utf8;base64,"
-      . base64_encode (file_get_contents ($suspect)) . ')');
-
+    else {
+      $context = stream_context_create (['http' => ['ignore_errors' => true]]);
+      if (!$fp = fopen ($suspect, 'r', false, $context)) return $extern[0];
+      $meta = stream_get_meta_data ($fp); fclose ($fp);
+      $this-> stream_wrapper_mimetype ($meta, $file_mime);
+      if ($file_mime === null) return $extern[0];
+      return $this-> expansion_summarum (
+        $extern[0], explode ('/', $file_mime)[1],
+        $file_mime, @file_get_contents ($suspect, false, $context),
+        true
+      );
+    }
   }
 
-  private function catmice_signature (string $id): string {
-    /// Reveal or hide minor details about `self-decisions`.
+  private function stream_wrapper_mimetype (array &$meta, ?string &$fm = null): void {
+    /// Extract Content-Type from stream_wrapper_data
+    $meta = $meta['wrapper_data'];
+    foreach ($meta as $n => $header) {
+      $Bomb = explode (':', $header);
+      $Bomb[0] = trim (strtolower ($Bomb[0]));
+      if ($Bomb[0] === 'content-type' && isset ($Bomb[1])) {
+        $fm = trim ($Bomb[1]);
+        break;
+      }
+      unset ($Bomb, $header, $meta[$n], $n);
+    } $meta = null;
+  }
 
-    $doctype = Observer-> doctype; return EOL . EOL
-      . '/**: ' . "Hardcoder::catmice `$doctype` against: \"" . Observer-> filterget[$id] ."\""
-        . EOL . EOL . "\t- Squeezed: " . var_export ($this-> squeeze, true). EOL . (($doctype === 'style')
-          ? "\t- Expand Externals: " . var_export ($this-> expandExternals, true) . EOL
-          : "\t- Comments persist: " . var_export ($this-> comments, true) . EOL
-        ) . "\t- Block-Comments persist: " . var_export ($this-> blockCmt, true)
+  private function expansion_summarum (
+    string $original, string $ext, bool|string $mime, string $suspect, bool $stream
+  ): string { /// Finally returns encoded target or gives back path as is
+    if (in_array ($ext, [ 'svg', 'svgz' ])) $mime = 'not_compliant';
+    return ((!$suspect || !$mime || $mime === 'not_compliant')
+      ? $original : "(data:$mime;charset=utf8;base64,"
+      . base64_encode ((($stream) ? $suspect
+        : file_get_contents ($suspect)
+      )) . ')'
+    );
+  }
+
+  private function catmice_signature(): string {
+    /// Reveal or hide minor details about `self-decisions`.
+    if (!$this-> template_call) {
+      $doctype = Observer-> doctype;
+      $against = Observer-> filterget[$this-> target_id];
+    }
+    else {
+      $against = $this-> target_id; $dynamic = 'Complicated!';
+      $doctype = 'Template ' . strtoupper (Observer-> doctype);
+    }
+
+    return EOL . EOL
+      . '/**: ' . "Hardcoder::catmice `$doctype` against: \"" . $against ."\""
+        . EOL . EOL . "\t- Squeezed: " . var_export (($dynamic ?? $this-> squeeze), true). EOL
+          . ((Observer-> doctype === 'style')
+            ? "\t- Expand Externals: " . var_export (($dynamic ?? $this-> expandExternals), true) . EOL
+            : "\t- Comments persist: " . var_export (($dynamic ?? $this-> comments), true) . EOL
+        ) . "\t- Block-Comments persist: " . var_export (($dynamic ?? $this-> blockCmt), true)
         . EOL . EOL
     . ':*/';
   }
 
-  private function headers_and_out (
-    int|float $hours
-    , string $content_type
-    , string $id
-    , string &$catmice
-  ): never {
-    ///
+  private function fetch_object_template (string $ext, string $tpl): bool {
+    /// Prepare template workspace and parse JSON template into string
+    $target = $this-> make_template_target ('json', $ext, $tpl);
+    $tpldir = dirname ($target); !is_dir ($tpldir) and mkdir ($tpldir, 0775, true);
+    $wall = $tpldir . DSP . 'index.php'; !is_file ($wall) and touch ($wall);
+    if (!is_file ($target)
+    || !ctype_alpha ($tpl)) {
+      echo self::HALT; return false;
+    } // ^^ Simple test/ portion abovereturn
+    $this-> packed = [
+      'gz' => $this-> make_template_target ('packed.gz', $ext, $tpl),
+      'json' => (@json_decode (file_get_contents ($target), false, JSON_UNESCAPED_UNICODE))
+    ]; return is_object ($this-> packed['json']);
+  }
 
-    $time = time();
-    $gdstring = 'D, d M Y H:i:s';
-    $seconds = ((int)(60 * (60 * $hours)));
+  private function make_template_target (string $which, string $ext, string $tpl): string {
+    /// Returns either json template path or path for packed.gz outcome.
+    return Api-> dspa ($this-> mimeLocation, '.tpl', "{$ext}.{$tpl}.{$which}");
+  }
+
+  private function template_call_pack (string &$catmice): void {
+    /// Write template collection to disk and release catmice
+    echo $catmice; ($this-> template_call && $this-> pack > 0)
+      and file_put_contents ($this-> packed,
+        gzcompress ($catmice, 9), LOCK_EX);
+    $catmice = null;
+  }
+
+  private function headers_and_out (int|float $hours, string $c_type, string &$catmice): never {
+    /// Send response headers, spit collection and optionally gzcompress template to disk
+    $seconds = $this-> hours_multiply ($hours);
+    $time = time(); $gdstring = 'D, d M Y H:i:s';
     $expires = gmdate ($gdstring, ($time + $seconds));
     $lastMod = gmdate ($gdstring, ((int)($time - ($time / 20))));
-    if ($this-> sig) $catmice .= $this-> catmice_signature ($id);
-
-    $headerList = array_merge ([
-      'Timing-Allow-Origin' => "*"
-      , 'Content-Allow-Origin' => "*"
-      , 'Cache-Control' => (($hours < self::ZERO_POINT_IMMUTABLE) ? 'no-cache'
-        : "max-age={$seconds}, immutable"), 'Last-Modified' => "$lastMod GMT"
-      , 'Expires' => "$expires GMT"
-      , 'X-Content-Type-Options' => "nosniff"
-    ], (($id === 'cat') ? [] : [
-      'Content-Security-Policy' => "default-src 'none'"
-      , 'X-Content-Security-Policy' => "default-src 'none'"
-    ]));
-
-    foreach ($headerList as $key => $value) {
-      header ("{$key}: {$value}");
+    foreach (array_merge (['Timing-Allow-Origin' => '*', 'Content-Allow-Origin' => '*'
+        , 'Cache-Control' => (($hours < self::ZERO_POINT_IMMUTABLE) ? 'no-cache'
+        : "max-age={$seconds}, immutable"), 'Last-Modified' => "$lastMod GMT",
+        'Expires' => "$expires GMT", 'X-Content-Type-Options' => "nosniff"
+      ], (($this-> target_id === 'cat') ? [] : [
+        'Content-Security-Policy' => "default-src 'none'",
+        'X-Content-Security-Policy' => "default-src 'none'"
+      ]), [ 'Content-Type' => "$c_type; charset=utf-8" ]
+    ) as $key => $value): header ("{$key}: {$value}");
       unset ($value, $key);
-    }
-
-    header ("Content-Type: $content_type; charset=utf-8");
-    ob_start(); ob_start ('ob_gzhandler');
-      header ("Transfer-Encoding: gzip");
-      echo trim ($catmice); unset (
-        $catmice, $lastMod, $expires,
-        $seconds, $gdstring
-      ); ob_end_flush();
+    endforeach;
+    ob_start();
+      ob_start ('ob_gzhandler');
+        header ("Transfer-Encoding: gzip");
+        $this-> template_call_pack ($catmice);
+      ob_end_flush();
       header ('Content-Length: '
         . ob_get_length());
-    ob_end_flush();
+      ob_end_flush();
     exit;
   }
 
