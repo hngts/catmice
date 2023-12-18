@@ -235,7 +235,8 @@ new class (0, false, true, true, true, false, __DIR__) {
   private function cat_charset (string &$catmice): void {
     /// Prepend utf-8 charset for styles
     $At = '@charset "UTF-8";';
-    $catmice = "{$At} " . str_replace ($At, '', $catmice);
+    $catmice = "{$At} " . str_replace (
+    [strtolower ($At), $At], '', $catmice);
     unset ($At); // <- mere habit.
   }
 
@@ -365,8 +366,8 @@ new class (0, false, true, true, true, false, __DIR__) {
       $this-> stream_wrapper_mimetype ($meta, $file_mime);
       if ($file_mime === null) return $extern[0];
       return $this-> expansion_summarum (
-        $extern[0], explode ('/', $file_mime)[1],
-        $file_mime, @file_get_contents ($suspect, false, $context),
+        $extern[0], explode ('/', $file_mime)[1], $file_mime,
+        (@file_get_contents ($suspect, false, $context) ?? false),
         true
       );
     }
