@@ -1,0 +1,43 @@
+{
+  "pack": 160,
+  "hours": 168,
+  "sig": true,
+  "concat": [
+    {
+      "mice": "$chainCollection"
+      , "comments": false
+      , "blockCmt": false
+      , "squeeze": true
+    },
+    {
+      "mice": "%potCollection"
+      , "comments": true
+      , "blockCmt": false
+      , "squeeze": true
+    }
+    , {
+      "mice": "%potCollection.file"
+      , "comments": true
+      , "blockCmt": true
+      , "squeeze": false
+    }
+    , {
+      "mice": "`Trademark|query"
+      , "comments": true
+      , "blockCmt": false
+      , "squeeze": true
+    }
+    , {
+      "mice": ".rootfile"
+      , "comments": false
+      , "blockCmt": false
+      , "squeeze": false
+    }
+    , {
+      "mice": "script"
+      , "comments": false
+      , "blockCmt": true
+      , "squeeze": false
+    }
+  ]
+}
