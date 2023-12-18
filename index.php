@@ -312,7 +312,7 @@ new class (0, false, true, true, true, false, __DIR__) {
   }
 
   private function expand_externals (array $extern): string {
-    /// ##~ TODO; Implement stream_get_contents via https
+    /// Convert suitable images and fonts to base64 string
     $suspect = trim ($extern[1]);
     $first_character = $suspect[0];
     $last_character = mb_substr ($suspect, -1);
