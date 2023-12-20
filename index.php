@@ -331,6 +331,7 @@ new class (0, false, true, true, true, false, __DIR__) {
       $imp = ((\str_starts_with ($suspect, '/')) ? '' : '/');
 
       if (!isset ($uTest['query'])) {
+        // url = ./../.. or /rel/to/file.ext
         $localTest = false; $real = \realpath ($suspect);
         $suspect = ((!\is_bool ($real) && $suspect !== $real)
         ? $real : "{$_SERVER['DOCUMENT_ROOT']}$imp{$suspect}");
@@ -354,7 +355,7 @@ new class (0, false, true, true, true, false, __DIR__) {
 
     // $httpTest = url(http(s)://..)
     // $slashTest = url(//www.website.com)
-    // $localTest = url(/abs/path) or url(./../relpath)
+    // $localTest = url(/?someget=somevalue)
 
     if (!isset ($checkLocalAndQuery) && ($httpTest || $slashTest || $localTest)) {
       if ($slashTest) $suspect = \explode (':', $httpHost)[0] . ":{$suspect}";
