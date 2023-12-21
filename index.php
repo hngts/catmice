@@ -296,7 +296,7 @@ new class (0, false, true, true, true, false, __DIR__) {
   }
 
   private function collection_mockery (string $extension, string &$catmice): void {
-    /// Squeezes content, removes comments and|or appends charset declaration
+    Squeezes content, removes block comments and|or line comments
     if ($this-> squeeze === true) {
       $this-> blockCmt = false;
       $this-> comments = false;
