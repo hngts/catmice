@@ -1,16 +1,22 @@
 {
-  "pack": 160,
-  "hours": 168,
+  "pack": 1230,
+  "hours": 1234,
   "sig": true,
   "concat": [
     {
-      "cat": "$chainCollection"
+      "cat": "stylesheet"
+      , "expandExternals": false
+      , "blockCmt": true
+      , "squeeze": false
+    }
+    , {
+      "cat": ".rootfile"
       , "expandExternals": false
       , "blockCmt": false
-      , "squeeze": true
-    },
-    {
-      "cat": "%potCollection"
+      , "squeeze": false
+    }
+    , {
+      "cat": "`Trademark|query"
       , "expandExternals": true
       , "blockCmt": false
       , "squeeze": true
@@ -22,22 +28,16 @@
       , "squeeze": false
     }
     , {
-      "cat": "`Trademark|query"
-      , "expandExternals": true
+      "cat": "$chainCollection"
+      , "expandExternals": false
       , "blockCmt": false
       , "squeeze": true
     }
     , {
-      "cat": ".rootfile"
-      , "expandExternals": false
+      "cat": "%potCollection"
+      , "expandExternals": true
       , "blockCmt": false
-      , "squeeze": false
-    }
-    , {
-      "cat": "stylesheet"
-      , "expandExternals": false
-      , "blockCmt": true
-      , "squeeze": false
+      , "squeeze": true
     }
   ]
 }
