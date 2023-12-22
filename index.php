@@ -142,8 +142,8 @@ new class (0, false, true, true, true, false, __DIR__) {
 
     if (!$this-> template_call) {
       $this-> target_id = $id;
-      $catmice = $this-> catmice_transmute (
-        $filteredID, $extension, $dL1, $dL2, $collect);
+      $catmice = $this-> catmice_transmute
+       ($filteredID, $extension, $dL1, $dL2, $collect);
       $this-> cat_charset_and_sig ($at_charset, $catmice);
     }
     else {
@@ -169,7 +169,7 @@ new class (0, false, true, true, true, false, __DIR__) {
           ); $file_ready = true;
         }
         else {
-          unlink ($this-> packed);
+          \unlink ($this-> packed);
           $file_ready = false;
         }
       }
@@ -189,13 +189,7 @@ new class (0, false, true, true, true, false, __DIR__) {
       }
     }
 
-    $TestHours = $hours = (Observer-> filterget['hrs'] ?? $this-> hours);
-    $hours = (($TestHours < 1 && self::ZERO_HOUR_SKEPTIC)
-      ? self::ZERO_POINT_IMMUTABLE
-      : ((int)$TestHours)
-    );
-
-    $this-> headers_and_out ($hours, $c_type, $catmice);
+    $this-> time_and_headers ($c_type, $catmice);
   }
 
   private function match_exact_type (?string &$id, ?string &$ext, ?string &$c_type): ?string {
@@ -296,7 +290,7 @@ new class (0, false, true, true, true, false, __DIR__) {
   }
 
   private function collection_mockery (string $extension, string &$catmice): void {
-    Squeezes content, removes block comments and|or line comments
+    /// Squeezes content, removes block comments and|or line comments
     if ($this-> squeeze === true) {
       $this-> blockCmt = false;
       $this-> comments = false;
@@ -425,7 +419,7 @@ new class (0, false, true, true, true, false, __DIR__) {
     $target = $this-> make_template_target ('json', $ext, $tpl);
     $tpldir = \dirname ($target); !\is_dir ($tpldir) and \mkdir ($tpldir, 0775, true);
     $wall = $tpldir . DSP . 'index.php'; !\is_file ($wall) and \touch ($wall);
-    if (!\is_file ($target) || !\ctype_alpha ($tpl)) return false;
+    if (!\is_file ($target) || !\ctype_alnum ($tpl)) return false;
     $this-> packed = [ // ^^ Simple test/ portion abovereturn
       'gz' => $this-> make_template_target ('packed.gz', $ext, $tpl),
       'json' => (@\json_decode (\file_get_contents ($target), false, JSON_UNESCAPED_UNICODE))
@@ -443,6 +437,14 @@ new class (0, false, true, true, true, false, __DIR__) {
       and \file_put_contents ($this-> packed,
         \gzdeflate ($catmice, 9), LOCK_EX);
     $catmice = null;
+  }
+
+  private function time_and_headers (string $c_type, string &$catmice): void {
+    /// Sets caching hours and calls final headers_and_out method
+    $ttHours = $hrs = ((!$this-> template_call)
+    ? (Observer-> filterget['hrs'] ?? $this-> hours) : $this-> hours);
+    $hrs = (($ttHours < 1 && self::ZERO_HOUR_SKEPTIC) ? self::ZERO_POINT_IMMUTABLE
+    : ((int)$ttHours)); $this-> headers_and_out ($hrs, $c_type, $catmice);
   }
 
   private function headers_and_out (int|float $hours, string $c_type, string &$catmice): never {
