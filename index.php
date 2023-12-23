@@ -57,11 +57,12 @@ new class (0, false, true, true, true, false, __DIR__) {
 
   private const OPT_ARGUMENT = [ /// _GET  =>  $this
 
-        'sq'  =>  'squeeze',
-        'c'   =>  'comments',
-        'bc'  =>  'blockCmt',
-        's'   =>  'sig',
-        'ex'  =>  'expandExternals',
+        0         =>  'hrs',
+        'sq'      =>  'squeeze',
+        'c'       =>  'comments',
+        'bc'      =>  'blockCmt',
+        's'       =>  'sig',
+        'ex'      =>  'expandExternals',
   ];
 
   private const HALT = 'Not a proper request.'; /// Common message.
@@ -111,22 +112,21 @@ new class (0, false, true, true, true, false, __DIR__) {
     $Public = \dirname ($_SERVER['SCRIPT_FILENAME']);
     $this-> basedir = \basename (($Public !== $fBdir) ? $Public : $fBdir);
     // This is for the options override via _GET parameter
-    foreach (self::OPT_ARGUMENT as $opt => $property) {
+    // 'hrs' is sliced and resolved in hngts_dependancy method
+    // as that predefined variable is part of broader (parent)
+    // `Hardcoder Next Generation Toolset` project.
+    foreach (\array_slice (self::OPT_ARGUMENT, 1) as $opt => $property) {
       if (isset ($_GET[$opt]) && \property_exists ($this, $property)) {
         $this-> $property = ((bool)\filter_input (INPUT_GET, $opt, FILTER_UNSAFE_RAW));
       } unset ($property, $opt);
     } // --
-      // Since this script is a part of bigger project, but at the same time
-      // works as a standalone script, replacement for composer and alike follows.
-      // If `H`(ardcoder)\Api class isn't loaded correctly, we need compatibility mimicry.
-      \defined ('HNG_ACTIVE_PLATFORM') and (
-        !\defined ('Api')
-          and \define ('Api', Api::do())
-      )
-      or
-        $this-> hngts_dependancy();
-    // Template path becomes ready
-    $this-> mimeLocation = Api-> dspa ($Public, self::TRADEMARK);
+    // Since this script is a part of bigger codebase, but at the same time
+    // works as a standalone script, replacement for composer and alike follows.
+    // If `H`(ardcoder)\Api class isn't loaded correctly, we need compatibility mimicry.
+    // And compatibility mimicry is whether You want to believe or not - named constant.
+    \defined ('HNG_ACTIVE_PLATFORM') and (!\defined ('Api') and \define ('Api', Api::do()))
+    or $this-> hngts_dependancy(); $this-> mimeLocation = Api-> dspa ($Public, self::TRADEMARK);
+      //                              ^^ Template path becomes ready
   }
 
   private function catmice_file_collector (string $dir, ?string &$catmice = null): void {
@@ -139,7 +139,6 @@ new class (0, false, true, true, true, false, __DIR__) {
     // Automatically create missing directories (if any).
     $trademark = Api-> dspa ($dL2, self::TRADEMARK);
     !\is_dir ($trademark) and \mkdir ($trademark, 0775, true);
-
     if (!$this-> template_call) {
       $this-> target_id = $id;
       $catmice = $this-> catmice_transmute
@@ -149,17 +148,13 @@ new class (0, false, true, true, true, false, __DIR__) {
     else {
       $_GET = [ $id => $filteredID ]; // overwrite _GET
       $this-> target_id = \mb_substr ($filteredID, 2);
-
       if (!$this-> fetch_object_template ($extension, $this-> target_id)) {
         echo self::HALT . ' JSON missing or invalid!'; return;
       }
-
       $json = $this-> packed['json'];
       $this-> packed = $this-> packed['gz'];
-
       foreach (['hours', 'pack', 'sig'] as $prop)
       $this-> $prop = $json-> $prop; unset ($prop);
-
       if (\is_file ($this-> packed)) {
         $stored = $this-> hours_multiply ($this-> pack);
         $since = (\filemtime ($this-> packed) + $stored);
@@ -174,7 +169,6 @@ new class (0, false, true, true, true, false, __DIR__) {
         }
       }
       else $file_ready = false;
-      // Bool file_ready means: stored and NOT expired
       if ($file_ready !== true || !\file_exists ($this-> packed)) {
         $mut = (($id === 'mice') ? 'comments':'expandExternals');
         foreach ($json-> concat as $n => $std) {
@@ -183,9 +177,9 @@ new class (0, false, true, true, true, false, __DIR__) {
           unset ($prop); $catmice .= $this-> catmice_transmute
           ($std-> $id, $extension, $dL1, $dL2, $collect);
           unset ($std, $json-> concat[$n], $n);
-        }
-        unset ($json, $mut);
-        $this-> cat_charset_and_sig ($at_charset, $catmice);
+        } unset ($json, $mut);
+        $this-> cat_charset_and_sig
+         ($at_charset, $catmice);
       }
     }
 
@@ -218,8 +212,8 @@ new class (0, false, true, true, true, false, __DIR__) {
     $this-> collection_mockery ($ext, $catmice);
     if ($ext === 'css' && $this-> expandExternals) {
       // From url (param) to base64,...
-      $cfn = 'url'; $pattern = $cfn .'\((.*?)\)/imsu';
-      $catmice = \preg_replace_callback ('/'. $pattern,
+      $cfn = 'url'; $pattern = '/' . $cfn . '\((.*?)\)/';
+      $catmice = \preg_replace_callback ($pattern . 'imsu',
       fn($extern) => $this-> expand_externals ($extern, $cfn),
       $catmice);
     }
@@ -354,9 +348,7 @@ new class (0, false, true, true, true, false, __DIR__) {
     if (!isset ($checkLocalAndQuery) && ($httpTest || $slashTest || $localTest)) {
       if ($slashTest) $suspect = \explode (':', $httpHost)[0] . ":{$suspect}";
       $context = \stream_context_create (['http' => ['ignore_errors' => true
-        , 'timeout' => self::STREAM_CONTEXT_TIMEOUT
-      ]]);
-
+        , 'timeout' => self::STREAM_CONTEXT_TIMEOUT ]]);
       if (!$fp = @\fopen ($suspect, 'r', false, $context))
       return $extern[0]; $meta = stream_get_meta_data ($fp);
       $this-> stream_wrapper_mimetype ($meta, $mime);
@@ -454,50 +446,35 @@ new class (0, false, true, true, true, false, __DIR__) {
     $expires = \gmdate ($gdstring, ($time + $seconds));
     $lastMod = \gmdate ($gdstring, ((int)($time - ($time / 20))));
     foreach (\array_merge (['Timing-Allow-Origin' => '*', 'Content-Allow-Origin' => '*'
-        , 'Cache-Control' => (($hours < self::ZERO_POINT_IMMUTABLE) ? 'no-cache'
-        : "max-age={$seconds}, immutable"), 'Last-Modified' => "$lastMod GMT",
-        'Expires' => "$expires GMT", 'X-Content-Type-Options' => "nosniff",
-        'Content-Encoding' => 'gzip, deflate, br'], (($this-> target_id === 'cat')
+      , 'Cache-Control' => (($hours < self::ZERO_POINT_IMMUTABLE) ? 'no-cache'
+      : "max-age={$seconds}, immutable"), 'Last-Modified' => "$lastMod GMT",
+      'Expires' => "$expires GMT", 'X-Content-Type-Options' => "nosniff",
+      'Content-Encoding' => 'gzip, deflate, br'], (($this-> target_id === 'cat')
       ? [] : [ 'Content-Security-Policy' => "default-src 'none'",
         'X-Content-Security-Policy' => "default-src 'none'"
       ]), [ 'Content-Type' => "$c_type; charset=utf-8" ]
     ) as $key => $value): \header ("{$key}: {$value}");
-      unset ($value, $key);
-    endforeach;
-    \ob_start();
-      \ob_start ('ob_gzhandler');
-        \header ('Transfer-Encoding: gzip, deflate, br');
-        $this-> template_call_pack ($catmice);
-      ob_end_flush();
-      \header ('Content-Length: '
-        . \ob_get_length());
-      \ob_end_flush();
+    unset ($value, $key); endforeach;
+    \ob_start(); \ob_start ('ob_gzhandler');
+      \header ('Transfer-Encoding: gzip, deflate, br');
+      $this-> template_call_pack ($catmice);
+      \ob_end_flush(); \header ('Content-Length: '
+        . \ob_get_length()); \ob_end_flush();
     exit;
   }
 
   private function hngts_dependancy(): void {
     /// Generates missing and vital data from hngts toolset
-
     function apacheMimeTypes (string $extension = '', string $basedir = ''): string|false {
-      /*: This function is a substitue for native 'mime_content_type';
-        $pathinfo = pathinfo ($_SERVER['SCRIPT_FILENAME'];
-        $mime_content_type = array_merge ($pathinfo, [
-          'mimetype' =>  apacheMimeTypes (($pathinfo['extension'] ?? 'txt'), __DIR__)
-        ]);
-      */
-
+      /// This function is a substitue for native 'mime_content_type';
       $apache = 'http://svn.apache.org/repos/asf/httpd/httpd/trunk/docs/conf';
       $basename = 'mime.types'; $serialized = "$basedir/$basename";
       $ext = (($extension === '') ? 'txt' : $extension);
       if (\is_file ($serialized)) {
-        //
         $MimeType = \unserialize (\file_get_contents ($serialized));
-        // For hntgs-yards, mimetype should always give false.
         if (\is_array ($MimeType)) return $MimeType[$ext] ?? false;
-
       }
-      else {
-        //! BlyAfiful block of code. :)
+      else { //! BlyAfiful block of code. :)
         $MimeType = \file ("$apache/$basename", 1|2|4);
         \is_array ($MimeType) or die (__FUNCTION__ . ' says: '
         . "Raw '$basename' whitelist file creation failed.");
@@ -520,7 +497,7 @@ new class (0, false, true, true, true, false, __DIR__) {
       }
     }
 
-    function globPublicTD (array $list):void {
+    function globPublicTD (array $list): void {
       /// Define `global Public Temporal Data`.
       foreach ($list as $name => $value) {
         !\defined ($name) and \define ($name, $value);
@@ -534,21 +511,15 @@ new class (0, false, true, true, true, false, __DIR__) {
       , 'PSP' => PATH_SEPARATOR             // On unix-alike boxes it is : on m$ boxes it is ;
       , 'DSP' => DIRECTORY_SEPARATOR        // On unix-alike boxes it is / on m$ boxes it is \
       , 'Api' => new class {                /// Shortened version of Public \H\Api as public constant fakery
-
-        public function dspa (...$suspects):string {
+        public function dspa (...$suspects): string {
           /// From args to: / + arg1/arg2/arg3 ..
-
           $TestMatch = (@\implode (DSP, $suspects));
-
-          !is_bool ($TestMatch)
+          !\is_bool ($TestMatch)
             or die (__METHOD__ . ' args - invalid.'
             . EOL . EOL . \print_r ($suspects, true));
-            unset ($suspects);
-
-          $t = "\176";
-          $TestMatch = ltrim ($TestMatch);
-
-          if (mb_substr ($TestMatch, 0, 1) === $t)
+          unset ($suspects); $t = "\176";
+          $TestMatch = \ltrim ($TestMatch);
+          if (\mb_substr ($TestMatch, 0, 1) === $t)
             $out = $this-> tildenv ($TestMatch, $t);
           return \trim ($this-> no_slash (($out ?? $TestMatch)));
         }
@@ -562,12 +533,10 @@ new class (0, false, true, true, true, false, __DIR__) {
           return ((\mb_substr ($a, -1) !== DSP) ? $a : \mb_substr ($a, 0, -1));
         }
 
-        public function no_comments (string $x = "\057\057", string $a = '', array $merge = []):string {
+        public function no_comments (string $x = "\057\057", string $a = '', array $merge = []): string {
           /// Remove '$x+? ' line comments from strings
-
           $a = \explode (EOL, $a);
           if (\count ($a) >= 1) {
-
             $diff = null;
             $merged = \array_merge (["\176", "\134", ' '], $merge);
             foreach ($a as $int => $b) {
@@ -579,13 +548,11 @@ new class (0, false, true, true, true, false, __DIR__) {
                   break;
                 } unset ($p, $sample);
               }
-
               if (\is_int ($diff) && \trim ($a[$diff]) === '') {
                 unset ($a[$diff]); $diff = null;
               } unset ($b, $int);
             }
           }
-
           return \implode (EOL, $a);
         }
 
@@ -597,7 +564,7 @@ new class (0, false, true, true, true, false, __DIR__) {
         public function flatten (string $suspect, int $mb = 0): string {
           /*: Trim and (mb_)strtolower suspect.
               Any other $mb than 1 will not be multibyte.
-          */ return \trim (((($mb === 1) ? '\\mb_' : '')
+          */ return \trim (((($mb === 1) ? NSP . 'mb_' : NSP)
           . 'strtolower') ($suspect));
         }
 
@@ -610,12 +577,11 @@ new class (0, false, true, true, true, false, __DIR__) {
         }
 
       }
-      , 'Observer' => new class {           /// Shortened version of Temporal Observer stream
-
+      , 'Observer' => new class (hrs: self::OPT_ARGUMENT[0]) {
+        /// Shortened version of Temporal Observer stream
         public $doctype;  ///
         public $filterget = []; ///
-
-        public function __construct () {
+        public function __construct (string $hrs) {
           /// This is where cat and mice keywords are determined.
           foreach (['cat' => 'style', 'mice' => 'script' ] as $k => $description) {
             if (isset ($_GET[$k]) && !isset ($this-> filterget[$k])) {
@@ -624,13 +590,11 @@ new class (0, false, true, true, true, false, __DIR__) {
               break;
             }
           }
-
-          if (isset ($_GET['hrs']) && !isset ($this-> filterget['hrs'])) {
-            $this-> filterget['hrs'] = ((int)\filter_input (INPUT_GET, 'hrs', FILTER_UNSAFE_RAW));
+          if (isset ($_GET[$hrs]) && !isset ($this-> filterget[$hrs])) {
+            $this-> filterget[$hrs] = ((int)\filter_input (INPUT_GET, $hrs, FILTER_UNSAFE_RAW));
           }
         }
       }
     ]);
   }
-
 };
