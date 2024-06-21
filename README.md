@@ -1,4 +1,4 @@
 # CatMice
 Script Asset Collector
 
-Visit [CatMice Manual](https://hardcoder.xyz/?mkp=catmice~man#)
+Visit [CatMice Manual](https://hngts.com/?mkp=catmice~man#)
