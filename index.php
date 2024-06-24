@@ -1,7 +1,7 @@
 <?php /// 'HARDCODER NGTS' ~ boilerplate.catmice-safe;
 declare (strict_types = 1);
-/*:Licence -> https://hardcoder.xyz/?mkp=licence~catmice
-  ^: ~ See https://hardcoder.xyz/?mkp=catmice~man for more details.
+/*:Licence -> https://hngts.com/?mkp=licence~catmice
+  ^: ~ See https://hngts.com/?mkp=catmice~man for more details.
 */
 
 use \H\Api; /*:
