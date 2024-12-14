@@ -1,14 +1,11 @@
-<?php /// 'HARDCODER NGTS' ~ boilerplate.catmice-safe;
+<?php /// 'HARDCODER HNGTS' ~ boilerplate.catmice-safe;
 declare (strict_types = 1);
-/*:Licence -> https://hngts.com/?mkp=licence~catmice
-  ^: ~ See https://hngts.com/?mkp=catmice~man for more details.
-*/
+/// Licence -> https://hngts.com/?mkp=licence~catmice 
+/// ~ See https://hngts.com/?mkp=catmice~man for more details.
 
 use \H\Api; /*:
-
     requires: PHPv>=8.2 w ctype & mb_string;
-    (optional: hntgs);
-*/
+    (optional: hntgs); */
 
 new class (0, false, true, true, true, false, __DIR__) {
   /*:-> get --- STATIC CONFIGURABLE PORTION ---
